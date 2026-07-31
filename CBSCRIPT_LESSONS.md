@@ -43,6 +43,43 @@ via `tools/cbscript-outer-loop.sh` (see docs/OUTER_LOOP.md). Keep each lesson sh
 - **Placed blocks need support.** Snow layers / carpets pop off if the block under them is air —
   place effect blocks on the ground where something lands, not floating in mid-air.
 
+## Selectors — types, scores, and modded mobs (from the Grumbnar climb)
+
+- **A CBScript `define`/`as` selector can't parse a NAMESPACED type** (`type=moddingfromamod:wish_mob`)
+  — the `:` is a syntax error ("Unexpected COLON"). Tag the entity in a RAW command first, then
+  define/act by tag:
+  `/execute as @e[type=moddingfromamod:wish_mob] run tag @s add mymob` then `define @X = @e[tag=mymob]`.
+- **Score conditions in a selector use CBScript's `[name OP value]`, NOT vanilla `scores={...}`.**
+  Write `@a[gs_shake >= 1]` (CBScript compiles it to `scores={gs_shake=1..}`). Writing
+  `@a[scores={gs_shake=1..}]` yourself is a syntax error ("Unexpected EQUALS").
+- **Modded entity types DO work in RAW commands** — `type=moddingfromamod:wish_mob` in a raw
+  `/execute` is preserved as-is; vanilla types like `zombie` still auto-get `minecraft:`.
+
+## Camera shake & screen effects (no vanilla command for it)
+
+- **There is no "shake camera" command.** Fake it: each tick for a few ticks, nudge the player's
+  rotation by a small amount and alternate the sign so it stays centred:
+  `/tp @s ~ ~ ~ ~5 ~3` then next tick `/tp @s ~ ~ ~ ~-5 ~-3`. Bigger delta = stronger shake.
+- **Degrade an effect with distance using distance BANDS**, not math (scoreboards have no sqrt):
+  `as @a[distance=..4] ...strong... end`, `as @a[distance=4..8] ...medium... end`, etc.
+- **"On the ground" = the player's `OnGround` NBT.** Gate ground-only damage with a raw command:
+  `/execute if entity @s[nbt={OnGround:1b}] run damage @s 6 minecraft:falling_block` (this nbt match
+  is fine in a raw command even though it can't go in a `define`).
+
+## 1.21.1 command syntax that changed
+
+- **Block particles** take a block-state component, not a bare id:
+  `particle minecraft:block{block_state:"minecraft:dirt"} ...` — NOT `particle block minecraft:dirt`.
+  (`falling_dust`, `block_marker` are the same.) Wrong form COMPILES but fails to LOAD at runtime.
+
+## ALWAYS test your functions after author_datapack
+
+- **"Compiled and loaded" does NOT mean every command is valid.** A bad particle/command COMPILES
+  fine but fails to LOAD at runtime (the function silently doesn't run). After author_datapack
+  succeeds, run your key functions with `run_command` (e.g. `function <id>:tick`) — if it says
+  "This function should not run" or nothing happens, a command inside is wrong; read the game log or
+  simplify and re-author.
+
 ## Calling functions (macros vs plain)
 
 - **A function that uses CBScript macros (`with $(x) = @s.foo do ... end`) compiles to a Minecraft
