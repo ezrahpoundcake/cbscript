@@ -122,7 +122,14 @@ class selector_definition(object):
 						if subparts[0] == 'scores':
 							subparts = [subparts[0], '='.join(subparts[1:])]
 						type = subparts[1]
-						if subparts[0] == 'type' and not type.startswith('minecraft:') and not type.startswith('!minecraft:'):
+						# Only default the namespace to minecraft: when the type has NO namespace of
+						# its own. The old check tested only for a 'minecraft:' prefix, so a MODDED
+						# type like 'moddingfromamod:wish_mob' got mangled into
+						# 'minecraft:moddingfromamod:wish_mob' — breaking detection of every modded
+						# entity. A ':' in the (unnegated) value means it is already namespaced.
+						bare_type = type[1:] if type.startswith('!') else type
+						already_namespaced = ':' in bare_type
+						if subparts[0] == 'type' and not already_namespaced:
 							if subparts[1].startswith('!'):
 								if type in env.entity_tags:
 									subparts[1] = f'!#{env.namespace}:{subparts[1][1:]}'
