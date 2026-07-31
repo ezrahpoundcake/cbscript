@@ -10,17 +10,31 @@ end
 # Hand a stack of Fireballs to whoever runs this. The chat link below calls it,
 # so a player only has to click once. Runs as the clicking player, so @s is them.
 function give()
-    /give @s snowball[minecraft:custom_name='{"text":"Fireball","color":"gold","bold":true,"italic":false}',minecraft:custom_data={fireball:1b},minecraft:enchantment_glint_override=true] 16
+    /give @s snowball[minecraft:custom_name='{"text":"Fireball","color":"red","bold":true,"italic":false}',minecraft:custom_data={fireball:1b},minecraft:enchantment_glint_override=true] 16
     /tellraw @s {"text":"You got 16 Fireballs! Throw them at monsters. 🔥","color":"gold"}
 end
 
-# Load function (runs on /reload): announce the pack and show a clickable give link.
+# The clickable greeting, shown to ONE player (@s).
+function greet()
+    /tellraw @s ["",{"text":"🔥 Fireball pack loaded! ","color":"gold","bold":true},{"text":"[ Click here for Fireballs ]","color":"red","bold":true,"underlined":true,"clickEvent":{"action":"run_command","value":"/function fireball:give"},"hoverEvent":{"action":"show_text","contents":{"text":"Get 16 Mario-style fireballs","color":"yellow"}}}]
+    /tellraw @s {"text":"(or type this yourself: /function fireball:give )","color":"gray","italic":true}
+end
+
+# Load function (runs on /reload): greet anyone already online.
 reset
-    /tellraw @a ["",{"text":"🔥 Fireball pack loaded! ","color":"gold","bold":true},{"text":"[ Click here for Fireballs ]","color":"red","bold":true,"underlined":true,"clickEvent":{"action":"run_command","value":"/function fireball:give"},"hoverEvent":{"action":"show_text","contents":{"text":"Get 16 Mario-style fireballs","color":"yellow"}}}]
-    /tellraw @a {"text":"(or type this yourself: /function fireball:give )","color":"gray","italic":true}
+    as @Player
+        greet()
+    end
 end
 
 clock tick
+    # Greet each player once. A load-time tellraw @a reaches NOBODY in singleplayer,
+    # because the pack loads a beat before the player finishes joining the world.
+    as @Player[tag=!fireball_greeted]
+        /tag @s add fireball_greeted
+        greet()
+    end
+
     # A thrown Fireball snowball carries our custom_data. Tag it 'fb' once so the
     # block below can act on it every tick. (NBT match lives in a raw command so we
     # don't lean on the selector parser for deep component paths.)
