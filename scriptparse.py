@@ -1,6 +1,7 @@
 from ply import *
 import traceback
 import scriptlex
+from CompileError import CompileError
 from block_types.advancement_definition_block import advancement_definition_block
 from block_types.array_definition_block import array_definition_block
 from block_types.block_definition_block import block_definition_block
@@ -1865,6 +1866,16 @@ def parse(data,debug=0):
 		p = bparser.parse(data,debug=debug,tracking=True)
 		return p
 	except SyntaxError as e:
+		# Surface the detailed location instead of swallowing it. p_error builds a
+		# precise "Syntax error at line N column C. Unexpected X symbol ..." message;
+		# printing it and returning None made compile_all report only a generic
+		# "Unable to parse script.", which is far harder for a caller (or an AI author)
+		# to act on. Re-raise so the real message reaches the caller's error field.
 		print(e)
+		raise
 	except Exception as e:
+		# An unexpected compiler failure during parsing: keep the traceback for humans,
+		# but raise a typed, single-line CompileError so the caller reports something
+		# actionable rather than a bare None / raw traceback.
 		print(traceback.format_exc())
+		raise CompileError('CBScript compiler error while parsing: ' + repr(e))
