@@ -125,7 +125,14 @@ class cbscript(object):
 			print(e)
 			self.dependencies = [source_file(d) for d in self.global_context.dependencies]
 			return False
-		
+
+		# A datapack without an explicit `reset` block still needs a load function: the load tag
+		# always points at <namespace>:reset, and post-processing injects the scoreboard/stack/args
+		# setup into it. If the author omitted `reset ... end`, create an empty one here instead of
+		# crashing later in post-processing with AttributeError('NoneType' ... 'defined_objectives').
+		if self.global_context.get_reset_function() is None:
+			self.global_context.register_function('reset', mcfunction(global_environment))
+
 		self.post_processing()
 			
 		world = self.create_world(parsed["dir"], self.namespace)
