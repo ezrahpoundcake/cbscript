@@ -208,7 +208,20 @@ class selector_definition(object):
 				
 		return None
 		
+	# Selector arguments Minecraft allows to appear more than once (AND-combined),
+	# most importantly negated type filters like type=!snowball,type=!item. The old
+	# behaviour replaced any same-named argument, so a selector with several
+	# type=!x filters silently kept only the LAST one. For these names we accumulate
+	# instead (skipping exact duplicates); every other argument still replaces.
+	REPEATABLE_ARGS = frozenset({
+		'type', 'tag', 'nbt', 'predicate', 'team', 'advancements', 'gamemode',
+	})
+
 	def set_part(self, name, value):
+		if name in self.REPEATABLE_ARGS:
+			if (name, value) not in self.parts:
+				self.parts.append((name, value))
+			return
 		self.parts = [part for part in self.parts if part[0] != name]
 		self.parts.append((name, value))
 		

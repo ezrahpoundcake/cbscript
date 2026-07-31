@@ -1,0 +1,39 @@
+dir "."
+desc "Mario-style fireballs: throw a renamed snowball to burn and hurt monsters"
+
+import common
+
+# A thrown Fireball is a snowball entity we have tagged 'fb' (see the tick clock).
+define @FireballSnowball = @Entity[type=snowball, tag=fb]
+end
+
+# Hand a stack of Fireballs to whoever runs this. The chat link below calls it,
+# so a player only has to click once. Runs as the clicking player, so @s is them.
+function give()
+    /give @s snowball[minecraft:custom_name='{"text":"Fireball","color":"gold","bold":true,"italic":false}',minecraft:custom_data={fireball:1b},minecraft:enchantment_glint_override=true] 16
+    /tellraw @s {"text":"You got 16 Fireballs! Throw them at monsters. 🔥","color":"gold"}
+end
+
+# Load function (runs on /reload): announce the pack and show a clickable give link.
+reset
+    /tellraw @a ["",{"text":"🔥 Fireball pack loaded! ","color":"gold","bold":true},{"text":"[ Click here for Fireballs ]","color":"red","bold":true,"underlined":true,"clickEvent":{"action":"run_command","value":"/function fireball:give"},"hoverEvent":{"action":"show_text","contents":{"text":"Get 16 Mario-style fireballs","color":"yellow"}}}]
+    /tellraw @a {"text":"(or type this yourself: /function fireball:give )","color":"gray","italic":true}
+end
+
+clock tick
+    # A thrown Fireball snowball carries our custom_data. Tag it 'fb' once so the
+    # block below can act on it every tick. (NBT match lives in a raw command so we
+    # don't lean on the selector parser for deep component paths.)
+    /execute as @e[type=snowball,tag=!fb,nbt={Item:{components:{"minecraft:custom_data":{fireball:1b}}}}] run tag @s add fb
+
+    as @FireballSnowball at @s
+        # The Mario look: a little jet of flame and smoke trailing the fireball.
+        /particle minecraft:flame ~ ~ ~ 0.15 0.15 0.15 0.02 12 force
+        /particle minecraft:smoke ~ ~ ~ 0.1 0.1 0.1 0.01 4
+
+        # Anything it touches (within ~1.8 blocks) catches fire and takes damage.
+        # Excludes the snowball itself, dropped items, players and XP orbs.
+        /execute as @e[distance=..1.8,type=!minecraft:snowball,type=!minecraft:item,type=!minecraft:player,type=!minecraft:experience_orb] run data merge entity @s {Fire:100s}
+        /damage @e[distance=..1.8,type=!minecraft:snowball,type=!minecraft:item,type=!minecraft:player,type=!minecraft:experience_orb] 4 minecraft:on_fire
+    end
+end

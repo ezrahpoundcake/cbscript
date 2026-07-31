@@ -24,7 +24,8 @@ class mcworld(object):
 		return logfile
 	
 	def write_functions(self, functions):
-		function_dir = f'data/{self.namespace}/functions/'
+		# MC 1.21 (pack_format 48) renamed the registry folders to singular: functions -> function.
+		function_dir = f'data/{self.namespace}/function/'
 		
 		for name in functions:
 			filename = os.path.join(function_dir, f"{name}.mcfunction")
@@ -34,7 +35,8 @@ class mcworld(object):
 			self.zip.writestr(filename, text)
 				
 	def write_tags(self, clocks, block_tags, entity_tags, item_tags):
-		tag_dir = 'data/minecraft/tags/functions/'
+		# MC 1.21 (pack_format 48): tags/functions -> tags/function.
+		tag_dir = 'data/minecraft/tags/function/'
 		
 		tick_tag_file = os.path.join(tag_dir, 'tick.json')
 		self.zip.writestr(tick_tag_file, json.dumps({'values':[f'{self.namespace}:{name}'for name in clocks]}, indent=4))
@@ -43,9 +45,9 @@ class mcworld(object):
 		self.zip.writestr(load_tag_file, json.dumps({'values':[f'{self.namespace}:reset']}, indent=4))
 			
 		for name, list in [
-			('blocks', block_tags),
-			('items', item_tags),
-			('entity_types', entity_tags)
+			('block', block_tags),
+			('item', item_tags),
+			('entity_type', entity_tags)
 		]:
 			if len(list) > 0:
 				tag_dir = f'data/{self.namespace}/tags/{name}/'
@@ -58,7 +60,7 @@ class mcworld(object):
 				
 	def write_recipes(self, recipes):
 		if len(recipes) > 0:
-			recipe_dir = f'data/{self.namespace}/recipes/'
+			recipe_dir = f'data/{self.namespace}/recipe/'
 			
 			id = 0
 			for recipe in recipes:
@@ -70,7 +72,7 @@ class mcworld(object):
 				
 	def write_advancements(self, advancements):
 		if len(advancements) > 0:
-			advancement_dir = f'data/{self.namespace}/advancements/'
+			advancement_dir = f'data/{self.namespace}/advancement/'
 			
 			for name in advancements:
 				advancement_file = os.path.join(advancement_dir, f'{name}.json')
@@ -84,17 +86,17 @@ class mcworld(object):
 					parts = name.split(':')
 					if len(parts) != 2:
 						raise CompileError(f'Invalid loot tables name "{name}"')
-					loot_table_dir = f'data/{parts[0]}/loot_tables/{type}/'
+					loot_table_dir = f'data/{parts[0]}/loot_table/{type}/'
 					filename = parts[1]
 				else:
-					loot_table_dir = f'data/{self.namespace}/loot_tables/{type}/'
+					loot_table_dir = f'data/{self.namespace}/loot_table/{type}/'
 					filename = name
 				loot_table_file = os.path.join(loot_table_dir, f'{filename}.json')
 				self.zip.writestr(loot_table_file, contents)
 	
 	def write_predicates(self, predicates):
 		if len(predicates) > 0:
-			predicate_dir = f'data/{self.namespace}/predicates/'
+			predicate_dir = f'data/{self.namespace}/predicate/'
 			
 			for name in predicates:
 				predicate_file = os.path.join(predicate_dir, f'{name}.json')
@@ -102,7 +104,7 @@ class mcworld(object):
 
 	def write_item_modifiers(self, item_modifiers):
 		if len(item_modifiers) > 0:
-			item_modifier_dir = f'data/{self.namespace}/item_modifiers/'
+			item_modifier_dir = f'data/{self.namespace}/item_modifier/'
 			
 			for name in item_modifiers:
 				item_modifier_file = os.path.join(item_modifier_dir, f'{name}.json')
@@ -111,7 +113,8 @@ class mcworld(object):
 	def write_mcmeta(self, desc):
 		mcmeta_file = 'pack.mcmeta'
 		
-		self.zip.writestr(mcmeta_file, json.dumps({'pack':{'pack_format':1, 'description':desc}}, indent=4))
+		# pack_format 48 = Minecraft 1.21 / 1.21.1.
+		self.zip.writestr(mcmeta_file, json.dumps({'pack':{'pack_format':48, 'description':desc}}, indent=4))
 	
 	def write_zip(self):
 		self.zip.close()

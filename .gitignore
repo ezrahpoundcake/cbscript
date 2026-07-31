@@ -4,3 +4,6 @@
 unittest/htmlcov/*
 *.coverage
 parsetab.py
+.venv/
+parser.out
+Scripts/datapacks/
