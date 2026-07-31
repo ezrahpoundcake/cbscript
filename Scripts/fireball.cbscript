@@ -32,8 +32,9 @@ clock tick
         /particle minecraft:smoke ~ ~ ~ 0.1 0.1 0.1 0.01 4
 
         # Anything it touches (within ~1.8 blocks) catches fire and takes damage.
-        # Excludes the snowball itself, dropped items, players and XP orbs.
+        # Excludes the snowball itself, dropped items, players and XP orbs. Both run
+        # per-entity via 'execute as' because /damage only accepts a SINGLE target.
         /execute as @e[distance=..1.8,type=!minecraft:snowball,type=!minecraft:item,type=!minecraft:player,type=!minecraft:experience_orb] run data merge entity @s {Fire:100s}
-        /damage @e[distance=..1.8,type=!minecraft:snowball,type=!minecraft:item,type=!minecraft:player,type=!minecraft:experience_orb] 4 minecraft:on_fire
+        /execute as @e[distance=..1.8,type=!minecraft:snowball,type=!minecraft:item,type=!minecraft:player,type=!minecraft:experience_orb] run damage @s 4 minecraft:on_fire
     end
 end
