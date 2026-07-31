@@ -43,6 +43,30 @@ via `tools/cbscript-outer-loop.sh` (see docs/OUTER_LOOP.md). Keep each lesson sh
 - **Placed blocks need support.** Snow layers / carpets pop off if the block under them is air —
   place effect blocks on the ground where something lands, not floating in mid-air.
 
+## Calling functions (macros vs plain)
+
+- **A function that uses CBScript macros (`with $(x) = @s.foo do ... end`) compiles to a Minecraft
+  MACRO function** (its `.mcfunction` has `$`-prefixed lines). You CANNOT call it with a plain
+  `/function ns:name` — it throws "This function should not run". Two safe options: call it from
+  CBScript with `name()` (which passes the macro args for you), or **drive that logic from the
+  `clock tick`** instead of a raw `/function`.
+- **For a "spawn this thing" chat link, don't click-run a macro function.** Instead summon a tagged
+  marker from the link (`/summon minecraft:marker ~ ~ ~ {Tags:["spawn_x"]}`) and let the `clock tick`
+  detect `@e[type=marker,tag=spawn_x]`, do the build, and `kill @s`. This sidesteps the macro issue
+  entirely and is how the Mario-face head spawns.
+
+## Moving/deforming display entities (proven on the Mario 64 head)
+
+- Give each `block_display`/`item_display` `interpolation_duration` (e.g. 2) and `teleport_duration`
+  when you summon it, or transforms will snap instead of easing.
+- **Deform = edit the 4x4 `transformation` matrix, then set `start_interpolation` to 0** so it eases
+  to the new shape. Stretch a piece by scaling one axis; move it by changing the translation column.
+- **Spring-back:** store a per-entity timer (`@s.squish = @s.squish + 1`), and when it passes your
+  threshold, write the REST transform back and re-interpolate.
+- **Invisible grab/hit points = `minecraft:interaction` entities** placed on the model. Read their
+  `attack`/`interaction` data component in the tick to know a player just hit/grabbed that spot.
+  (Reading it back is also how you can self-test deform logic with no player.)
+
 ## Detecting a thrown custom item (the reliable recipe)
 
 Tag the projectile by its custom_data in a raw command, then act on the tag:
