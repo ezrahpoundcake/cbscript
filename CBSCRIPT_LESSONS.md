@@ -18,6 +18,14 @@ via `tools/cbscript-outer-loop.sh` (see docs/OUTER_LOOP.md). Keep each lesson sh
   `/tellraw`, `/particle`, ...) must be a single physical line — never wrap JSON/NBT across lines.
 - **Selector bases are single letters:** `@e @a @s @p @r`. `@Entity`, `@Player`, `@Marker`,
   `@Position` only exist if you `import common` (recommended — put it at the top).
+- **A compile-time loop var goes into a command as bare `$dx`, NOT `$(dx)`.** In a raw command
+  `~$dx` unrolls to a literal `~0`/`~1`/`~2`; but `~$(dx)` compiles to a Minecraft **macro** line
+  (`$`-prefixed → "This function should not run"). Use `$(name)` ONLY for real macro params (`with`).
+  To scan a box, loop `for $dx in $range(5)` and offset from a corner:
+  `execute positioned ~-2 ~-1 ~-2 run function ns:grid`, then in `grid` use `positioned ~$dx ~$dy ~$dz`.
+- **Emit a block/entity/item tag natively:** `define block_tag NAME` then bare ids one per line, then
+  `end` (writes `data/<ns>/tags/block/NAME.json`). Reference it in a command as `#<ns>:NAME`
+  (e.g. `execute if block ~ ~ ~ #mypack:flammable`). No post-compile injection needed.
 - **`define` a selector like:** `define @Foo = @e[type=snowball, tag=mine]` then a blank line then
   `end`. Deep NBT/component matches (e.g. `nbt={Item:{components:{...}}}`) belong in a RAW `/execute`
   command, not in a `define` — the selector parser is happy with type/tag/distance but not deep NBT.
@@ -54,6 +62,26 @@ via `tools/cbscript-outer-loop.sh` (see docs/OUTER_LOOP.md). Keep each lesson sh
   `@a[scores={gs_shake=1..}]` yourself is a syntax error ("Unexpected EQUALS").
 - **Modded entity types DO work in RAW commands** — `type=moddingfromamod:wish_mob` in a raw
   `/execute` is preserved as-is; vanilla types like `zombie` still auto-get `minecraft:`.
+
+## Extending a Java mod additively (datapack ON TOP of a real mod — proven on `battleoflord:blue_lava`)
+
+- **Reference the mod's registered id directly.** A datapack can detect and place a Java mod's
+  custom block/fluid: `execute if block ~ ~ ~ battleoflord:blue_lava ...` MATCHES it at runtime, and
+  `setblock ~ ~ ~ battleoflord:blue_lava` places it. No compile-time dep, no Java change — the id is
+  just a string the raw command carries through. This is how you grant "make the mod's X do Y" wishes.
+- **Isolate your NEW behaviour from what the mod already does, so you can test it.** e.g. the Java
+  fluid burns things *inside* it; the datapack's job was to burn things *next to* it — put the test
+  mob ADJACENT (not inside) so a Fire=0→160 result can only be the datapack.
+- **A function invoked with `execute as @e ... run function ns:f` runs at the CALLER's position** —
+  add `at @s` (`execute as @e ... at @s run function ns:f`) or your `~ ~ ~` block checks look at the
+  wrong place (the classic "it does nothing" bug in a per-entity scan).
+
+## Compiling a saved `.cbscript` directly (compile_once.py, outside the mod)
+
+- **Include the `dir "."` / `desc "..."` header.** Inside the mod the header is injected; a standalone
+  file (like the saved `wish-datapacks/*.cbscript`) must carry it or the parser errors at line 1.
+- **Drop `import common` unless you use its `@Entity`/`@Player`/… aliases** — it needs `common.cblib`
+  on the import path, which a bare `compile_once.py` run won't find (traceback in `import_file`).
 
 ## Camera shake & screen effects (no vanilla command for it)
 
