@@ -63,6 +63,32 @@ via `tools/cbscript-outer-loop.sh` (see docs/OUTER_LOOP.md). Keep each lesson sh
 - **Modded entity types DO work in RAW commands** — `type=moddingfromamod:wish_mob` in a raw
   `/execute` is preserved as-is; vanilla types like `zombie` still auto-get `minecraft:`.
 
+## Performance — RATE-LIMIT heavy work or you lag the game (STANDARD, do this every time)
+
+- **NEVER run a volumetric block scan (a `for`-loop over a box) every tick.** A 5x3x5 scan is ~375
+  commands; per player per tick that stalls the server. Every CBScript clock runs EVERY tick (the
+  `clock <name>` id is just a function name — there is no built-in period), so YOU must gate.
+- **The standard tick-gate** — a per-second counter. Copy this:
+  ```
+  clock tick
+      g.slow = g.slow + 1
+      if g.slow >= 20            # 20 ticks = ~1 second
+          g.slow = 0
+          <the heavy scan / build / fill goes here>
+      end
+  end
+  ```
+  Compiles to `scoreboard players add g slow 1` + `if score g slow matches 20..` — cheap. Use a
+  second counter (`g.fast >= 4`) for work that must feel responsive.
+- **Pick the period by what the player would SEE.** Ambient/environmental effects (fire spreading to
+  blocks, weather, terrain) — **~1s (20t) is invisible** and often more faithful (vanilla lava
+  spreads fire on a slow random cadence anyway). Things reacting to the player or a moving mob
+  (a creature catching fire, a trap triggering) — keep **~0.2s (4t)** so it doesn't feel broken.
+- **Cheap vs heavy:** iterating nearby ENTITIES (`as @e[distance=..]`) is cheap (indexed) — a few
+  block checks each is fine often. Iterating BLOCKS (a `for` box scan) is heavy — gate it hard.
+- Scan around PLAYERS (`as @a at @s`), not the whole world — a datapack only affects loaded chunks,
+  and a player-centred box is all anyone can see anyway.
+
 ## Extending a Java mod additively (datapack ON TOP of a real mod — proven on `battleoflord:blue_lava`)
 
 - **Reference the mod's registered id directly.** A datapack can detect and place a Java mod's
