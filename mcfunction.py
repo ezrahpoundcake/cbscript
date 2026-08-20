@@ -1,4 +1,5 @@
-from selector_definition import selector_definition
+from selector_definition from nbt_case import fix_nbt_case
+import selector_definition
 from environment import isNumber
 from source_file import source_file
 from variable_types.scoreboard_var import scoreboard_var
@@ -420,6 +421,12 @@ class mcfunction(object):
 				command = command[1:]
 		
 			command = self.environment.apply(command)
+
+			# Vanilla NBT field names are CamelCase and nbt={...} matching is case-sensitive, so
+			# the lower-case form is a selector that matches nothing, for ever, with no error
+			# anywhere. See nbt_case.py — measured at 33 occurrences across 10 of 15 generated
+			# packs, all of which compiled and loaded and did nothing.
+			command = fix_nbt_case(command)
 
 			if '$(' in command:
 				if command[0] != '$':
