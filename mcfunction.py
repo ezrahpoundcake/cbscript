@@ -1,5 +1,5 @@
-from selector_definition from nbt_case import fix_nbt_case
-import selector_definition
+from selector_definition import selector_definition
+from nbt_case import fix_nbt_case
 from environment import isNumber
 from source_file import source_file
 from variable_types.scoreboard_var import scoreboard_var
