@@ -1,5 +1,6 @@
 from selector_definition import selector_definition
 from nbt_case import fix_nbt_case
+from attribute_ids import fix_attribute_ids
 from environment import isNumber
 from source_file import source_file
 from variable_types.scoreboard_var import scoreboard_var
@@ -427,6 +428,12 @@ class mcfunction(object):
 			# anywhere. See nbt_case.py — measured at 33 occurrences across 10 of 15 generated
 			# packs, all of which compiled and loaded and did nothing.
 			command = fix_nbt_case(command)
+
+			# On this Minecraft every attribute id is prefixed (generic./player./zombie.), and the
+			# short name a model writes is the one from later versions. Worse than the NBT case
+			# above: a bad attribute id makes Minecraft reject the WHOLE FUNCTION at pack load and
+			# drop it, while the pack still reports as enabled. See attribute_ids.py.
+			command = fix_attribute_ids(command)
 
 			if '$(' in command:
 				if command[0] != '$':
