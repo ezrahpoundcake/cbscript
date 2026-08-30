@@ -81,6 +81,19 @@ class TestRecognisesMcfunction(unittest.TestCase):
         self.assertIsNotNone(M.explain(src, 4))
 
 
+    def test_execute_subcommand_as_a_chain_step(self):
+        """0/2 on the first production failures it saw; both were this shape."""
+        for src in ("clock tick\n    as @s at @s positioned ^0 ^3.29 ^1.56\n",
+                    "clock tick\n    as @e[tag=x] at @s positioned ~ ~1 ~\n"):
+            hint = M.explain(src, 2)
+            self.assertIsNotNone(hint, src)
+            self.assertIn("positioned", hint)
+
+    def test_cbscript_own_chain_keywords_are_not_flagged(self):
+        # at/as/facing/rotated/align are CBScript keywords; only the ones it LACKS matter.
+        self.assertEqual(M.lint(
+            "clock tick\n    as @e[tag=x] at @s facing @p rotated ~ ~ align xyz\n"), [])
+
 class TestSilentOnValidCBScript(unittest.TestCase):
     """The half that decides whether anyone leaves it switched on."""
 

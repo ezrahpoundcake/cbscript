@@ -232,6 +232,32 @@ def _d_block_delimiter(code, raw):
     return None
 
 
+
+# `execute` SUBCOMMANDS. CBScript borrows some of these as chain keywords (at, as, facing,
+# rotated, align, anchored -- see scriptlex.keywords) and does NOT have the rest, so the
+# ones it lacks are the interesting set: they read as valid chain steps and are not.
+EXECUTE_SUBCOMMANDS = frozenset(
+    "positioned in on store summon over dimension".split()) - CBS_KEYWORDS
+
+
+def _d_execute_subcommand(code, raw):
+    """An `execute` subcommand used as a CBScript chain step.
+
+    Found the hard way: the linter scored 8/9 on its own corpus and 0/2 on the first
+    production failures it ever saw, and BOTH were this shape --
+    `as @s at @s positioned ^0 ^3.29 ^1.56`. `positioned` is not a Minecraft COMMAND, so
+    the command-vocabulary detector could never have caught it; it is a subcommand, which
+    is a different vocabulary and needed its own.
+    """
+    for w in sorted(EXECUTE_SUBCOMMANDS):
+        if re.search(r"(?<![\w.])%s\b" % re.escape(w), code):
+            return ("`%s` is an `execute` subcommand, not a CBScript chain step." % w,
+                    "CBScript's chain has as/at/facing/rotated/align/anchored and no "
+                    "others. For anything else, write the whole thing as a raw "
+                    "`/execute ... run ...` line instead.")
+    return None
+
+
 DETECTORS = (
     _d_bare_command,
     _d_execute_chain,
@@ -241,13 +267,15 @@ DETECTORS = (
     _d_store,
     _d_scoreboard_score_access,
     _d_block_delimiter,
+    _d_execute_subcommand,
 )
 
 # Detectors confident enough to report with no parse error in hand. The rest are
 # suggestive and only run once the parser has already failed on that line.
 CONFIDENT = frozenset(
     (_d_bare_command, _d_execute_chain, _d_matches, _d_store,
-     _d_scoreboard_score_access, _d_block_delimiter))
+     _d_scoreboard_score_access, _d_block_delimiter,
+     _d_execute_subcommand))
 
 
 def _findings_for_line(lineno, raw, detectors):
