@@ -18,12 +18,14 @@ CORRECTED, NOT REFUSED, on the same reasoning as nbt_case.py: the short spelling
 this version, the fix is mechanical, and only the 31 names this Minecraft actually has are touched —
 so correcting cannot change what a working script does. A warning is printed so the author learns.
 
-VERSION-PINNED ON PURPOSE. This branch is the 1.21.1 fork, and the table below is read from THAT
-Minecraft's own Attributes.java, not from memory. On a version where the short names became real,
-this file must be deleted rather than edited: rewriting `minecraft:scale` there would break a script
-that was correct. `test_every_short_name_is_unambiguous` fails loudly if the table ever grows two
-prefixes for one short name, which is the shape that would make a rewrite a guess.
+BOTH DIRECTIONS, CHOSEN AT RUNTIME (2026-09-23). This file was version-pinned to 1.21.1 and said
+it must be deleted on a flattened version. The mod now builds for 1.21.4 AND 1.21.1 from one tree
+and ships ONE bundled compiler, so instead the caller names its version in CBSCRIPT_MC and the
+correction runs whichever way that version needs: short -> prefixed on 1.21.1, prefixed -> short
+from 1.21.2. The table is still 1.21.1's own, and every name in it exists flattened on 1.21.2+, so
+the reverse is exactly as mechanical. `test_every_short_name_is_unambiguous` still guards the table.
 """
+import os
 import re
 
 # Every attribute registered by Minecraft 1.21.1, read out of net.minecraft...Attributes.java.
@@ -63,17 +65,41 @@ NBT_ID = re.compile(r'(\bid\s*:\s*")([a-z0-9_.:]+)(")', re.IGNORECASE)
 _warned = set()
 
 
+def _flattened():
+	"""True on a Minecraft that dropped the prefixes (1.21.2 and later).
+
+	The bundled compiler serves BOTH of the mod's targets (a 1.21.4 build and a 1.21.1 compat build),
+	so the direction of the correction is a runtime fact, not a branch: the Java side sets
+	CBSCRIPT_MC to the version it is compiling for. Unset means 1.21.1, the only version this file
+	knew before, so an old caller behaves exactly as it always did.
+	"""
+	raw = os.environ.get('CBSCRIPT_MC', '1.21.1')
+	try:
+		parts = tuple(int(p) for p in raw.split('.')[:3])
+	except ValueError:
+		return False
+	return parts >= (1, 21, 2)
+
+
+# qualified -> short. On a flattened version the prefixed spelling is always wrong, for the same
+# reason the short one is always wrong on 1.21.1: exactly one of the two exists.
+BY_QUALIFIED = {q: q.split('.', 1)[1] for q in QUALIFIED}
+
+
 def _corrected(raw):
 	"""The real id for what the author wrote, or None if it needs no change.
 
 	Keeps the author's own shape: a bare `scale` becomes `generic.scale`, and a namespaced
-	`minecraft:scale` keeps its namespace.
+	`minecraft:scale` keeps its namespace. On a flattened version it goes the other way.
 	"""
 	namespaced = ':' in raw
 	name = raw.split(':', 1)[1] if namespaced else raw
-	if name in QUALIFIED:
-		return None                      # already right
-	real = BY_SHORT.get(name.lower())
+	if _flattened():
+		real = BY_QUALIFIED.get(name.lower())
+	else:
+		if name in QUALIFIED:
+			return None                      # already right
+		real = BY_SHORT.get(name.lower())
 	if real is None:
 		return None                      # not an attribute we know; leave the author's own text
 	return ('minecraft:' + real) if namespaced else real
@@ -82,9 +108,8 @@ def _corrected(raw):
 def _warn(was, now):
 	if (was, now) not in _warned:
 		_warned.add((was, now))
-		print(f'Warning: "{was}" should be "{now}" — on this Minecraft every attribute id is '
-			f'prefixed, and the short name makes the whole FUNCTION fail to load while the pack '
-			f'still reports as enabled. Corrected.')
+		print(f'Warning: "{was}" should be "{now}" on this Minecraft — the other spelling makes the '
+			f'whole FUNCTION fail to load while the pack still reports as enabled. Corrected.')
 
 
 def fix_attribute_ids(command):

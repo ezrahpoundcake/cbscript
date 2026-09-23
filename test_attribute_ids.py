@@ -6,6 +6,7 @@ Python 2 suite (`import new`, `lambda (x):`) and does not run on any Python this
 compiler uses — compile_once.py is python3. So the 120 tests in there cannot be executed here, which
 is why nbt_case.py shipped without any. This file runs.
 """
+import os
 import unittest
 
 import attribute_ids
@@ -89,6 +90,39 @@ class TestAttributeIds(unittest.TestCase):
 			for _ in range(4):
 				fix_attribute_ids('attribute @s minecraft:scale base set 2.0')
 		self.assertEqual(out.getvalue().count('Corrected.'), 1, out.getvalue())
+
+
+class TestFlattenedVersion(unittest.TestCase):
+	"""CBSCRIPT_MC=1.21.4: the prefixed spelling is the wrong one, and it goes the other way."""
+
+	def setUp(self):
+		attribute_ids.reset_warnings()
+		self._was = os.environ.get('CBSCRIPT_MC')
+		os.environ['CBSCRIPT_MC'] = '1.21.4'
+
+	def tearDown(self):
+		if self._was is None:
+			os.environ.pop('CBSCRIPT_MC', None)
+		else:
+			os.environ['CBSCRIPT_MC'] = self._was
+
+	def test_prefixed_name_is_flattened(self):
+		self.assertEqual(
+			fix_attribute_ids('attribute @s minecraft:generic.scale base set 2.0'),
+			'attribute @s minecraft:scale base set 2.0')
+		self.assertEqual(
+			fix_attribute_ids('attribute @s player.block_interaction_range base set 6'),
+			'attribute @s block_interaction_range base set 6')
+
+	def test_a_flat_name_is_left_alone(self):
+		for command in ['attribute @s minecraft:scale base set 2.0',
+				'attribute Dev max_health base set 40']:
+			self.assertEqual(fix_attribute_ids(command), command)
+
+	def test_summon_list_is_flattened(self):
+		self.assertEqual(
+			fix_attribute_ids('summon zombie ~ ~ ~ {attributes:[{id:"minecraft:generic.scale",base:2.0}]}'),
+			'summon zombie ~ ~ ~ {attributes:[{id:"minecraft:scale",base:2.0}]}')
 
 
 if __name__ == '__main__':
