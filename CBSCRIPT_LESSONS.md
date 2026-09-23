@@ -53,10 +53,18 @@ via `tools/cbscript-outer-loop.sh` (see docs/OUTER_LOOP.md). Keep each lesson sh
 
 ## Selectors — types, scores, and modded mobs (from the Grumbnar climb)
 
-- **A CBScript `define`/`as` selector can't parse a NAMESPACED type** (`type=moddingfromamod:wish_mob`)
-  — the `:` is a syntax error ("Unexpected COLON"). Tag the entity in a RAW command first, then
-  define/act by tag:
+- **A CBScript `define`/`as`/`if` selector can't parse a NAMESPACED type — and that includes
+  `minecraft:`.** `as @e[type=minecraft:sheep]` is a syntax error ("Unexpected COLON"); write the BARE
+  vanilla id, `as @e[type=sheep]` (CBScript adds `minecraft:` itself). For a modded type, tag the
+  entity in a RAW command first, then define/act by tag:
   `/execute as @e[type=moddingfromamod:wish_mob] run tag @s add mymob` then `define @X = @e[tag=mymob]`.
+- **An entity-type TAG (`type=#minecraft:raiders`) can't go in a CBScript selector either** — the
+  `#` starts a comment ("Unexpected COMMENT"). Use it only inside a RAW `/execute ... run ...` line.
+- **"Is anyone nearby?" is `if @a[distance=..8]`, NOT `if entity @a[...]`.** CBScript's `if`/`unless`
+  take the selector directly; the vanilla word `entity` is a syntax error ("Unexpected ATID").
+- **Compare with `==`, assign with `=`.** `if timer_on == 1` / `if @s.cd == 0`. Writing
+  `if timer_on = 1` is a syntax error ("Unexpected EQUALS"), and so is the vanilla
+  `unless score timer_on matches 0` — use `unless timer_on == 0`. There is no `!=` — it is a syntax error too.
 - **Score conditions in a selector use CBScript's `[name OP value]`, NOT vanilla `scores={...}`.**
   Write `@a[gs_shake >= 1]` (CBScript compiles it to `scores={gs_shake=1..}`). Writing
   `@a[scores={gs_shake=1..}]` yourself is a syntax error ("Unexpected EQUALS").
