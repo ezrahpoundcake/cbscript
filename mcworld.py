@@ -7,6 +7,7 @@ import json
 import io
 import zipfile
 from CompileError import CompileError
+import mc_target
 
 class mcworld(object):
 	def __init__(self, leveldir, namespace):
@@ -113,8 +114,10 @@ class mcworld(object):
 	def write_mcmeta(self, desc):
 		mcmeta_file = 'pack.mcmeta'
 		
-		# pack_format 48 = Minecraft 1.21 / 1.21.1.
-		self.zip.writestr(mcmeta_file, json.dumps({'pack':{'pack_format':48, 'description':desc}}, indent=4))
+		# The target's own number (48 on 1.21.1, 61 on 1.21.4). A pack written with the other target's
+		# number still loads, but as "made for an older/newer version", and the mod's install path
+		# had to rewrite it on the way into the world (T11.5).
+		self.zip.writestr(mcmeta_file, json.dumps({'pack':{'pack_format':mc_target.pack_format(), 'description':desc}}, indent=4))
 	
 	def write_zip(self):
 		self.zip.close()
