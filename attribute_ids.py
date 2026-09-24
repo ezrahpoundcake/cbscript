@@ -26,6 +26,8 @@ from 1.21.2. The table is still 1.21.1's own, and every name in it exists flatte
 the reverse is exactly as mechanical. `test_every_short_name_is_unambiguous` still guards the table.
 """
 import os
+
+import mc_target
 import re
 
 # Every attribute registered by Minecraft 1.21.1, read out of net.minecraft...Attributes.java.
@@ -73,11 +75,7 @@ def _flattened():
 	CBSCRIPT_MC to the version it is compiling for. Unset means 1.21.1, the only version this file
 	knew before, so an old caller behaves exactly as it always did.
 	"""
-	raw = os.environ.get('CBSCRIPT_MC', '1.21.1')
-	try:
-		parts = tuple(int(p) for p in raw.split('.')[:3])
-	except ValueError:
-		return False
+	parts = mc_target.version()
 	return parts >= (1, 21, 2)
 
 
