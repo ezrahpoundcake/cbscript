@@ -32,7 +32,13 @@ class source_file(object):
 					content_file.seek(self.last_size)
 				text = content_file.read()
 			
-			time.sleep(0.1)
+			# Only wait when the read came back EMPTY -- an editor that truncates then
+			# rewrites is caught mid-save by the watch loop, and that is all this retry is
+			# for. Sleeping after every successful read cost 0.1 s per file read, two per
+			# compile (the script and its imported .cblib): ~0.2 s of a ~0.29 s one-shot
+			# compile, measured with cProfile (modding-from-a-mod #1226).
+			if len(text) == 0:
+				time.sleep(0.1)
 			
 		self.last_size = os.path.getsize(self.filename)
 		return text
