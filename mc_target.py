@@ -34,3 +34,11 @@ def pack_format():
 		if v >= since:
 			return fmt
 	return PACK_FORMATS[-1][1]
+
+
+def is_26():
+	"""True for Minecraft 26.x (calendar versioning), where several command spellings changed:
+	snake_case game rules, click_event/hover_event, and entity NBT such as fall_distance.
+	port/mc26.2 (modding-from-a-mod #1593). Every 26.x branch in the compiler asks this, so a
+	1.21.x compile is byte-for-byte what it was."""
+	return version() >= (26,)

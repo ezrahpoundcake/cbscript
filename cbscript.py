@@ -168,7 +168,10 @@ class cbscript(object):
 		
 	def add_max_chain_length(self):
 		f = self.global_context.get_reset_function()
-		f.insert_command('/gamerule maxCommandChainLength 1000000000', 0)
+		import mc_target
+		# port/mc26.2: 26.x renamed every game rule to snake_case and keeps no alias.
+		rule = 'max_command_sequence_length' if mc_target.is_26() else 'maxCommandChainLength'
+		f.insert_command(f'/gamerule {rule} 1000000000', 0)
 		
 	def initialize_stack(self):
 		f = self.global_context.get_reset_function()

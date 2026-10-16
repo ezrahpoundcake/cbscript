@@ -1,3 +1,4 @@
+import mc_target
 import copy
 from scratch_tracker import scratch_tracker
 from CompileError import CompileError
@@ -79,7 +80,12 @@ def formatJsonText(func, text):
 					command = f'/function {func.namespace}:{command[len("call "):]}'
 				else:
 					action = 'run_command'
-				formatted = formatted + ',{{"text":"{0}","clickEvent":{{"action":"{1}","value":"{2}"}}{3}}}'.format(unformatted.replace('"', '\\"'), action, command, getPropertiesText(properties))
+				# port/mc26.2: 26.x spells it click_event, and names the payload for its action.
+				if mc_target.is_26():
+					key = 'url' if action == 'open_url' else 'command'
+					formatted = formatted + ',{{"text":"{0}","click_event":{{"action":"{1}","{2}":"{3}"}}{4}}}'.format(unformatted.replace('"', '\\"'), action, key, command, getPropertiesText(properties))
+				else:
+					formatted = formatted + ',{{"text":"{0}","clickEvent":{{"action":"{1}","value":"{2}"}}{3}}}'.format(unformatted.replace('"', '\\"'), action, command, getPropertiesText(properties))
 			
 	formatted = formatted + "]"
 	

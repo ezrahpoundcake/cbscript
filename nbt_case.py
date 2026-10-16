@@ -50,9 +50,18 @@ def fix_nbt_case(command):
 	if not command or 'nbt=' not in command:
 		return command
 
+	import mc_target
+	# port/mc26.2: 26.x renamed FallDistance to fall_distance. Correct to what THIS target reads.
+	renames = {'FallDistance': 'fall_distance'} if mc_target.is_26() else {}
+
 	def fix_block(match):
 		block = match.group(0)
+		for old, new in renames.items():
+			block = re.sub(r'([{,]\s*)(' + old + r'|' + new + r')(\s*:)', lambda m: m.group(1) + new + m.group(3),
+				block, flags=re.IGNORECASE)
 		for field in FIELDS:
+			if field in renames:
+				continue
 			# A field name sits after `{` or `,` and before `:`. Anchoring on that is what stops a
 			# VALUE that happens to read like a field name from being rewritten inside the data.
 			pattern = re.compile(r'([{,]\s*)(' + field + r')(\s*:)', re.IGNORECASE)
