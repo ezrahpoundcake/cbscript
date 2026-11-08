@@ -1,6 +1,7 @@
 from selector_definition import selector_definition
 from nbt_case import fix_nbt_case
 from attribute_ids import fix_attribute_ids
+from component_syntax import fix_component_syntax
 from environment import isNumber
 from source_file import source_file
 from variable_types.scoreboard_var import scoreboard_var
@@ -434,6 +435,11 @@ class mcfunction(object):
 			# above: a bad attribute id makes Minecraft reject the WHOLE FUNCTION at pack load and
 			# drop it, while the pack still reports as enabled. See attribute_ids.py.
 			command = fix_attribute_ids(command)
+
+			# On 1.21.5+ dyed_color, text components and attribute_modifiers are spelled differently,
+			# and the old spelling is refused (the whole function is dropped at load) or, for a quoted
+			# name, ACCEPTED as literal text. See component_syntax.py.
+			command = fix_component_syntax(command)
 
 			if '$(' in command:
 				if command[0] != '$':
