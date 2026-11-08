@@ -64,5 +64,31 @@ class TestComponentSyntax(Base):
 		self.assertEqual(cs.fix_component_syntax(old), old)
 
 
+	def test_enchantments_lose_their_levels_wrapper(self):
+		# Measured on a live 1.21.8 house, 2026-11-08: "Failed to get element minecraft:levels".
+		self.assertEqual(cs.fix_component_syntax('give @s diamond_pickaxe[minecraft:enchantments={levels:{"minecraft:efficiency":5,"minecraft:fortune":3}}] 1'),
+			'give @s diamond_pickaxe[minecraft:enchantments={"minecraft:efficiency":5,"minecraft:fortune":3}] 1')
+		self.assertEqual(cs.fix_component_syntax('give @s enchanted_book[stored_enchantments={levels:{"minecraft:mending":1},show_in_tooltip:false}]'),
+			'give @s enchanted_book[stored_enchantments={"minecraft:mending":1},minecraft:tooltip_display={hidden_components:["minecraft:stored_enchantments"]}]')
+
+	def test_new_enchantments_are_left_alone(self):
+		c = 'give @s bow[minecraft:enchantments={"minecraft:power":5}] 1'
+		self.assertEqual(cs.fix_component_syntax(c), c)
+
+
+class TestClickEvent(Base):
+	"""1.21.5 renamed clickEvent -> click_event (value -> url / command). The old key is ACCEPTED and ignored."""
+
+	def test_new_target_writes_click_event(self):
+		import tellraw
+		self.assertEqual(tellraw.click_event('open_url', 'https://x.y'), '"click_event":{"action":"open_url","url":"https://x.y"}')
+		self.assertEqual(tellraw.click_event('run_command', '/function a:b'), '"click_event":{"action":"run_command","command":"/function a:b"}')
+		self.assertEqual(tellraw.click_event('suggest_command', '/say hi'), '"click_event":{"action":"suggest_command","command":"/say hi"}')
+
+	def test_old_target_keeps_click_event_camel_case(self):
+		import tellraw
+		os.environ['CBSCRIPT_MC'] = '1.21.4'
+		self.assertEqual(tellraw.click_event('open_url', 'https://x.y'), '"clickEvent":{"action":"open_url","value":"https://x.y"}')
+
 if __name__ == '__main__':
 	unittest.main()

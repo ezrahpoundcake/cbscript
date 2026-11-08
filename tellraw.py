@@ -1,3 +1,4 @@
+import mc_target
 import copy
 from scratch_tracker import scratch_tracker
 from CompileError import CompileError
@@ -13,6 +14,15 @@ from CompileError import CompileError
 (@Selector.Score) to display a score
 (Score) to display a Global score.
 '''
+
+def click_event(action, value):
+	"""A link's click, in the target's spelling. 1.21.5 renamed clickEvent to click_event and its value to
+	url (open_url) or command (run_command, suggest_command); the old spelling is ACCEPTED and does nothing,
+	so a 1.21.8 link compiled the 1.21.4 way is dead with no error (found in a live world, 2026-11-08)."""
+	if mc_target.version() >= (1, 21, 5):
+		field = 'url' if action == 'open_url' else 'command'
+		return f'"click_event":{{"action":"{action}","{field}":"{value}"}}'
+	return f'"clickEvent":{{"action":"{action}","value":"{value}"}}'
 
 def getPropertiesText(properties):
 	text = ""
@@ -79,7 +89,7 @@ def formatJsonText(func, text):
 					command = f'/function {func.namespace}:{command[len("call "):]}'
 				else:
 					action = 'run_command'
-				formatted = formatted + ',{{"text":"{0}","clickEvent":{{"action":"{1}","value":"{2}"}}{3}}}'.format(unformatted.replace('"', '\\"'), action, command, getPropertiesText(properties))
+				formatted = formatted + ',{{"text":"{0}",{1}{2}}}'.format(unformatted.replace('"', '\\"'), click_event(action, command), getPropertiesText(properties))
 			
 	formatted = formatted + "]"
 	

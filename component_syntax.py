@@ -9,6 +9,7 @@ drop the whole function — the pack still reports as enabled (attribute_ids.py'
       -> custom_name={"text":"X"}               text in a component is SNBT now, and a QUOTED value is
       plain text: the old form is ACCEPTED and names the item, literally, {"text":"X"}. A JSON object
       or string is valid SNBT, so the same text goes in unquoted.
+  enchantments={levels:{…}} / stored_enchantments  -> the bare map (refused: "Failed to get element minecraft:levels")
   attribute_modifiers={modifiers:[…],show_in_tooltip:false}
       -> attribute_modifiers=[…] (+ tooltip_display={hidden_components:["attribute_modifiers"]})
 
@@ -100,24 +101,34 @@ def _fix_lore(command):
 		i = end
 
 
+# A component that lost its wrapper in 1.21.5: attribute_modifiers={modifiers:[…]} is the bare list, and
+# enchantments / stored_enchantments={levels:{…}} the bare map ("Failed to get element minecraft:levels",
+# measured on a 1.21.8 server, 2026-11-08 — this file corrected only the first, the mod's ComponentSpelling
+# both). A show_in_tooltip:false inside becomes tooltip_display on the item.
+_WRAPPED = {'attribute_modifiers': ('modifiers', '[', ']'),
+	'enchantments': ('levels', '{', '}'),
+	'stored_enchantments': ('levels', '{', '}')}
+
+
 def _fix_modifiers(command):
 	out, i = [], 0
-	pat = re.compile(r'((?:minecraft:)?attribute_modifiers)=\{')
+	pat = re.compile(r'((?:minecraft:)?(attribute_modifiers|stored_enchantments|enchantments))=\{')
 	while True:
 		m = pat.search(command, i)
 		if not m:
 			out.append(command[i:])
 			return ''.join(out)
+		key, lopen, lclose = _WRAPPED[m.group(2)]
 		start = m.end() - 1
 		end = _match_bracket(command, start, '{', '}')
 		inner = command[start + 1:end - 1] if end > 0 else ''
-		lm = re.match(r'\s*modifiers\s*:\s*\[', inner)
+		lm = re.match(r'\s*' + key + r'\s*:\s*' + re.escape(lopen), inner)
 		if end < 0 or not lm:
 			out.append(command[i:m.end()])
 			i = m.end()
 			continue
 		lstart = lm.end() - 1
-		lend = _match_bracket(inner, lstart, '[', ']')
+		lend = _match_bracket(inner, lstart, lopen, lclose)
 		tail = inner[lend:].strip()
 		hide = re.fullmatch(r',?\s*show_in_tooltip\s*:\s*(false|0b|0)\s*', tail) is not None
 		if lend < 0 or not (tail == '' or hide or re.fullmatch(r',?\s*show_in_tooltip\s*:\s*\w+\s*', tail)):
@@ -126,7 +137,7 @@ def _fix_modifiers(command):
 			continue
 		new = m.group(1) + '=' + inner[lstart:lend]
 		if hide:
-			new += ',minecraft:tooltip_display={hidden_components:["minecraft:attribute_modifiers"]}'
+			new += ',minecraft:tooltip_display={hidden_components:["minecraft:' + m.group(2) + '"]}'
 		_warn(command[m.start():end], new)
 		out.append(command[i:m.start()] + new)
 		i = end
