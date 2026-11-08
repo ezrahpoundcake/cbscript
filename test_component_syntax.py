@@ -90,5 +90,25 @@ class TestClickEvent(Base):
 		os.environ['CBSCRIPT_MC'] = '1.21.4'
 		self.assertEqual(tellraw.click_event('open_url', 'https://x.y'), '"clickEvent":{"action":"open_url","value":"https://x.y"}')
 
+
+class TestLint(Base):
+	"""The silent 1.21.5 forms nothing rewrites are WARNED about, and the command is left as written."""
+
+	def test_hand_items_warns_and_is_untouched(self):
+		import io, contextlib
+		buf = io.StringIO()
+		c = 'summon zombie ~ ~ ~ {HandItems:[{id:"minecraft:iron_sword",count:1},{}]}'
+		with contextlib.redirect_stdout(buf):
+			self.assertEqual(cs.fix_component_syntax(c), c)
+		self.assertIn('equipment:{mainhand', buf.getvalue())
+
+	def test_old_target_says_nothing(self):
+		import io, contextlib
+		os.environ['CBSCRIPT_MC'] = '1.21.4'
+		buf = io.StringIO()
+		with contextlib.redirect_stdout(buf):
+			cs.fix_component_syntax('data modify entity @s HandItems[0] set value {}')
+		self.assertEqual(buf.getvalue(), '')
+
 if __name__ == '__main__':
 	unittest.main()

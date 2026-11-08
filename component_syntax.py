@@ -168,4 +168,27 @@ def fix_component_syntax(command):
 	command = _TEXT_ONE.sub(text, command)
 	command = _fix_lore(command)
 	command = _fix_modifiers(command)
+	lint_component_syntax(command)
 	return command
+
+# Spellings 1.21.5 changed that this file does NOT rewrite, because the new shape is not a mechanical
+# respelling of the old one. Each is ACCEPTED in the old form and does nothing (a mob holds nothing, drops
+# with the wrong odds, a tool breaks anything) — so the author is told, once per form, what to write instead.
+_LINT = (
+	(re.compile(r'\b(HandItems|ArmorItems)\b'),
+	 'HandItems/ArmorItems are gone since 1.21.5 and are silently ignored: write equipment:{mainhand:{…},offhand:{…},head:{…},chest:{…},legs:{…},feet:{…}} (a path: equipment.mainhand), or item replace entity @s weapon.mainhand with …'),
+	(re.compile(r'\b(HandDropChances|ArmorDropChances)\b'),
+	 'HandDropChances/ArmorDropChances are gone since 1.21.5 and are silently ignored: write drop_chances:{mainhand:0.5f,head:0f,…} (a path: drop_chances.mainhand)'),
+	(re.compile(r'can_(break|place_on)=\{\s*predicates'),
+	 'can_break/can_place_on lost their {predicates:[…]} wrapper in 1.21.5: write can_break=[{blocks:"minecraft:stone"}] (or one predicate), and hide its line with tooltip_display'),
+)
+
+
+def lint_component_syntax(command):
+	"""The 1.21.5 spellings nothing rewrites: a warning naming the new form, printed once per form."""
+	if not _new_syntax():
+		return
+	for pat, advice in _LINT:
+		if pat.search(command) and advice not in _warned:
+			_warned.add(advice)
+			print(f'component syntax: {advice}')
