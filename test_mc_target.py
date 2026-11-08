@@ -26,13 +26,14 @@ class TestPackFormat(_Env):
 		self.assertEqual(mc_target.pack_format(), 48)
 
 	def test_each_target_gets_its_own_number(self):
-		for mc, fmt in (('1.21.1', 48), ('1.21', 48), ('1.21.2', 57), ('1.21.3', 57), ('1.21.4', 61)):
+		for mc, fmt in (('1.21.1', 48), ('1.21', 48), ('1.21.2', 57), ('1.21.3', 57), ('1.21.4', 61),
+						('1.21.5', 71), ('1.21.6', 80), ('1.21.7', 81), ('1.21.8', 81)):
 			os.environ['CBSCRIPT_MC'] = mc
 			self.assertEqual(mc_target.pack_format(), fmt, mc)
 
 	def test_a_newer_minecraft_gets_the_newest_number_known(self):
 		os.environ['CBSCRIPT_MC'] = '1.21.9'
-		self.assertEqual(mc_target.pack_format(), 61)
+		self.assertEqual(mc_target.pack_format(), 81)
 
 	def test_garbage_is_the_default_not_a_crash(self):
 		os.environ['CBSCRIPT_MC'] = 'latest'
@@ -41,14 +42,14 @@ class TestPackFormat(_Env):
 	def test_the_written_mcmeta_carries_the_targets_number(self):
 		# The real writer, not the helper: this is the line that said 48 for every target.
 		import mcworld
-		os.environ['CBSCRIPT_MC'] = '1.21.4'
+		os.environ['CBSCRIPT_MC'] = '1.21.8'
 		w = mcworld.mcworld.__new__(mcworld.mcworld)
 		buf = io.BytesIO()
 		w.zip = zipfile.ZipFile(buf, 'w')
 		w.write_mcmeta('t')
 		w.zip.close()
 		meta = json.loads(zipfile.ZipFile(buf).read('pack.mcmeta'))
-		self.assertEqual(meta['pack']['pack_format'], 61)
+		self.assertEqual(meta['pack']['pack_format'], 81)
 
 
 if __name__ == '__main__':
