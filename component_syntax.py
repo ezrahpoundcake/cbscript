@@ -40,7 +40,11 @@ def reset_warnings():
 
 
 _DYED = re.compile(r'((?:minecraft:)?dyed_color)=\{\s*rgb\s*:\s*(-?\d+)\s*(?:,\s*show_in_tooltip\s*:\s*\w+\s*)?\}')
-_TEXT_ONE = re.compile(r"((?:minecraft:)?(?:custom_name|item_name))='((?:[^'\\]|\\.)*)'")
+# Item components (custom_name=) AND entity/block NBT (CustomName:, a sign's messages:, a book's pages:, Lore:)
+# — the NBT forms are ACCEPTED in the old spelling and show the braces literally (a machine's sign read
+# {"text":"ice + sugar"}). The same two patterns as the mod's compat/ComponentSpelling, which a parity test
+# in the mod (tools/test-spelling-parity.py) holds this file to.
+_TEXT_ONE = re.compile(r"((?:minecraft:)?(?:custom_name|item_name)=|\b(?:CustomName|custom_name)\s*:\s*)'((?:[^'\\]|\\.)*)'")
 
 
 def _unquote(body):
@@ -78,7 +82,7 @@ def _match_bracket(s, i, open_ch, close_ch):
 
 def _fix_lore(command):
 	out, i = [], 0
-	pat = re.compile(r'(?:minecraft:)?lore=\[')
+	pat = re.compile(r'(?:(?:minecraft:)?lore=|\b(?:messages|pages|Lore)\s*:\s*)\[')
 	while True:
 		m = pat.search(command, i)
 		if not m:
@@ -156,7 +160,7 @@ def fix_component_syntax(command):
 		body = _unquote(m.group(2))
 		if not _is_json_text(body):
 			return m.group(0)
-		now = f'{m.group(1)}={body}'
+		now = f'{m.group(1)}{body}'
 		_warn(m.group(0), now)
 		return now
 
