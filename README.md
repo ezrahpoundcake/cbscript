@@ -1,3 +1,8 @@
+> **This is moddy-cbscript**, a modified fork of [SethBling's CBScript](https://github.com/SethBling/cbscript) maintained
+> for the Minecraft mod **Moddy the Wish Watch**. It is used with the original author's permission; the original code
+> is not open-source licensed. See [`NOTICE.md`](NOTICE.md) for exactly what is and is not covered by this
+> repository's `LICENSE`. Fixes that are not Moddy-specific are welcome to go back upstream.
+
 # Introduction
 
 CBScript is a transpiled language, designed by SethBling. This compiler will compile CBScript files into Minecraft datapack zip files. It has many higher level language features that don't exist at the Minecraft command level. Awareness of implementation details will help you avoid performance overhead and bugs. The files in the datapack are generally organized by source file line numbers to make it easier to find the particular compiled mcfunction files you're looking for.
