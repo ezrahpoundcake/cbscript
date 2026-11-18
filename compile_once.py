@@ -75,6 +75,26 @@ class OneShot(cbscript_mod.cbscript):
         return world
 
 
+
+def _idiom_hint(script_path, error_text):
+    """Explain a parse failure in terms of mcfunction-vs-CBScript idiom, if that fits.
+
+    Best-effort and deliberately defensive: a linter that raises would turn a reported
+    compile error into a crashed compiler, which is strictly worse than no hint.
+    """
+    try:
+        import re as _re
+        import mcfunction_idioms
+        m = _re.search(r'line (\d+)', error_text or '')
+        if not m:
+            return None
+        with open(script_path, 'r') as fh:
+            text = fh.read()
+        return mcfunction_idioms.explain(text, int(m.group(1)))
+    except Exception:
+        return None
+
+
 def main():
     ap = argparse.ArgumentParser(description='One-shot CBScript compile.')
     ap.add_argument('script', help='path to the .cbscript source')
@@ -103,6 +123,15 @@ def main():
             except (SyntaxError, CompileError) as e:
                 ok = False
                 result['error'] = str(e)
+                # A parser error names the token it choked on; it does not say WHY the
+                # line is wrong. When the cause is Minecraft-command syntax written in
+                # a CBScript position -- the single commonest way this language is got
+                # wrong -- add the sentence that actually fixes it, so a caller
+                # retrying on the error message has something to act on.
+                hint = _idiom_hint(script_path, result['error'])
+                if hint:
+                    result['hint'] = hint
+                    result['error'] += '\n' + hint
             except Exception as e:  # noqa: BLE001 - report anything to the caller
                 ok = False
                 result['error'] = 'Unexpected compiler error: ' + repr(e) \
